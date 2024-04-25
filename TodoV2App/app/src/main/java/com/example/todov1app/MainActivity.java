@@ -40,14 +40,12 @@ public class MainActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
         Log.d("MainActivity", "onCreate");
 
-        //se tiver uma instancia salva
         if(savedInstanceState != null) {
             tasks = (ArrayList<Task>) savedInstanceState.getSerializable("tasks");
             if (tasks == null) tasks = new ArrayList<>();
         }
 
         binding.addButton.setOnClickListener(view -> {
-            //desabilita o action mode quando clica no botao add
             if(currentActionMode != null)
                 currentActionMode.finish();
 
@@ -87,13 +85,6 @@ public class MainActivity extends AppCompatActivity {
             }
     );
 
-    /**
-     *
-     * @param savedInstanceState
-     *
-     * Mudar a orientacao da tela nao perde os dados
-     * comente este metodo e mude a orientacao com uma recyclerview preenchida
-     */
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
         super.onSaveInstanceState(savedInstanceState);
@@ -101,11 +92,7 @@ public class MainActivity extends AppCompatActivity {
         savedInstanceState.putSerializable("tasks", tasks);
     }
 
-    /**
-     * Classe anonima que implementa a interface ActionMode.Callback
-     * usada para criar um context menu (usando o actionBar)
-     */
-    private ActionMode.Callback modeCallBack = new ActionMode.Callback() {
+    private final ActionMode.Callback modeCallBack = new ActionMode.Callback() {
 
         @Override
         public boolean onCreateActionMode(ActionMode mode, Menu menu) {
@@ -114,54 +101,68 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
 
-        // chamado quando o usuario seleciona um item do contextual menu
         @Override
         public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+            Task tTask = tasks.get(currentPosition);
             switch(item.getItemId()) {
                 case R.id.showItem:
                     AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-                    Task tTask = tasks.get(currentPosition);
-                    String tMsg = "Name: " + tTask.getName() + "\n" + "Description: " + tTask.getDescription();
+                    String tMsg = "Name: " + tTask.getName() + "\nDescription: " + tTask.getDescription() + "\nPriority: " + tTask.getPriority();
                     builder.setTitle("Task details");
                     builder.setMessage(tMsg);
                     builder.setPositiveButton("OK", null);
                     builder.create().show();
-                    mode.finish();	//encerra o action mode
+                    mode.finish();
                     return true;
 
                 case R.id.deleteItem:
                     tasks.remove(currentPosition);
                     taskRecyclerViewAdapter.notifyDataSetChanged();
-                    mode.finish();	//encerra o action mode
+                    mode.finish();
                     return true;
 
                 case R.id.toTopItem:
-                    tTask = tasks.remove(currentPosition);
+                    tasks.remove(currentPosition);
                     tasks.add(0, tTask);
                     taskRecyclerViewAdapter.notifyDataSetChanged();
-                    mode.finish();	//encerra o action mode
+                    mode.finish();
                     return true;
 
                 case R.id.toEndItem:
-                    tTask = tasks.remove(currentPosition);
+                    tasks.remove(currentPosition);
                     tasks.add(tTask);
                     taskRecyclerViewAdapter.notifyDataSetChanged();
-                    mode.finish();	//encerra o action mode
+                    mode.finish();
+                    return true;
+
+                case R.id.prioritizeItem:
+                    if ("High".equals(tTask.getPriority())) {
+                        Toast.makeText(MainActivity.this, "Task already has high priority", Toast.LENGTH_SHORT).show();
+                    } else {
+                        tTask.setPriority(nextPriority(tTask.getPriority()));
+                        taskRecyclerViewAdapter.notifyItemChanged(currentPosition);
+                    }
+                    mode.finish();
                     return true;
             }
             return false;
         }
 
-        //chamado to vez que o action mode eh apresentado
+        private String nextPriority(String currentPriority) {
+            switch (currentPriority) {
+                case "Low": return "Medium";
+                default: return "High";
+            }
+        }
+
         @Override
         public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
             return false;
         }
 
-        //chamado quando o usuario sai do action mode
         @Override
         public void onDestroyActionMode(ActionMode mode) {
-            currentActionMode = null; //limpa o current mode atual
+            currentActionMode = null;
         }
     };
 }
